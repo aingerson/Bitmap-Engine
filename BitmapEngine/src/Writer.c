@@ -7,6 +7,7 @@
 #include "RawBitmapReader.h"
 #include <math.h>
 #include <string.h>
+#include <dirent.h>
 
 int numCols;//number of columns
 int max = 200;//maximum number of columns to build at once (cap on number of files open at once)
@@ -125,6 +126,18 @@ int toStriped(int num_threads){
  * Takes the BITMAP_FILE and reformats to unstriped file folder
  */
 int toUnstriped(){
+	char *unstriped_name = unstripedExt(bitmap_file);
+	strcat(striped_name, "\0");
+	struct dirent *f;
+	DIR *unstriped_dir = opendir(unstriped_name);
+	if (unstriped_dir) {
+		while ((f = readdir(unstriped_dir)) != NULL) {
+			if (f->d_type = DT_REG)
+				numCols++;
+		}
+		closedir(unstriped_dir);
+		return 1;
+	}
 	FILE *fp = fopen(bitmap_file, "r");//try to open the original bitmap
 		if(fp == NULL){
 			fprintf(stderr,"\nCould not open %s for unstriped reformatting\n",bitmap_file);
@@ -135,7 +148,7 @@ int toUnstriped(){
 			numCols = 0;//counts number of columns
 			word_read one = 1;//used for bitwise operations (for longs)
 
-			while((c=getc(fp))!=',');//skip the row number and get to the actual data
+			while((c=getc(fp))!='1' && c!='0');//skip the row number and get to the actual data
 			while((c=getc(fp))=='1' || c=='0'){
 				numCols++;//just go through the first row to see how many columns this file has
 			}
@@ -220,7 +233,7 @@ int toUnstriped(){
  */
 int readRow(FILE *fp,int *r,int iter){
 	char c;//character we're scanning
-	while((c=getc(fp))!=','){//skip the row number
+	while((c=getc(fp))!='1' && c!='0'){//skip the row number
 		if(c==EOF) return 0;//reached the end of the file so return that we were unsuccessful
 	}
 	int write = 0;//whether it's time to write or not
